@@ -6,9 +6,16 @@
 # 200 → success,201 → created,400 → bad request,401 → unauthorized,404 — Not Found,409 → conflict (email exists),500 → server error
 
 from flask import Flask,request,jsonify
-import json
+from sqlalchemy import create_engine
+from models import Base
 
 app = Flask(__name__)
+
+# Create a connection to the database using sqlalchemy engine
+engine = create_engine("sqlite:///./flask_duka_api.db", echo=True)
+
+# Create tables into the database using sqlachemy
+Base.metadata.create_all(engine)
 
 @app.route("/")
 def home():

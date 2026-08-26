@@ -8,7 +8,7 @@
 from flask import Flask,request,jsonify
 from sqlalchemy import create_engine,select
 from sqlalchemy.orm import Session
-from models import Base,Product
+from models import Base,Product,Sale,Sales_detail,Purchase
 
 app = Flask(__name__)
 
@@ -57,6 +57,65 @@ def products():
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
+
+@app.route("/sales")
+def sales():
+    if request.method=="GET":
+        query=select(Sale)
+        sales=session.scalars(query)
+
+        sales_list = []
+        for sale in sales:
+            s = {"id":sale.id,
+                "user_id":sale.user_id,
+                "sale_date":sale.sale_date}
+            sales_list.append(s)
+        return jsonify(sales_list), 200
+    
+    elif request.method=="POST":
+        data = request.get_json()
+        if data["user_id"] == "" or data["sale_date"] == "":
+            error = {"Error":"Ensure all fields are set"}
+            return jsonify(error), 403
+        else:
+            pass
+    else:
+        error = {"Error":"Method not allowed"}
+        return jsonify(error), 405
+
+@app.route("/sales_details")
+def sales_details():
+    if request.method=="GET":
+        query=select(Sales_detail)
+        sales_details=session.scalars(query)
+
+        sales_details = []
+        for sal in sales_details:
+            s = {"id":sal.id,
+                "product_id":sal.product_id,
+                "sale_id":sal.sale_id,
+                "quantity":sal.quantity}
+            sales_details.append(s)
+        return jsonify(sales_details), 200
+    
+    elif request.method=="POST":
+        data = request.get_json()
+        if data["product_id"] == "" or data["sale_id"] == "" or data["quantity"]:
+            error = {"Error":"Ensure all fields are set"}
+            return jsonify(error), 403
+        else:
+            pass
+    else:
+        error = {"Error":"Method not allowed"}
+        return jsonify(error), 405
+
+@app.route("/purchases")
+def purchases():
+    if request.method=="GET":
+        query=select(Purchase)
+        purchase=session.scalars(query)
+
+
 
 
 app.run(debug=True)

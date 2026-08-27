@@ -21,6 +21,24 @@ Base.metadata.create_all(engine)
 # Create a session to do sql transactions
 session = Session(engine)
 
+user = {"id":"1",
+        "full_name":"Binti",
+        "email":"binti@gmail.com",
+        "password":"binti5",
+        "phone_number":"0717238745"}
+
+@app.before_request
+def before_request():
+    try:
+        print("A request is coming in!")
+        new_user = User(user)
+        session.add(new_user)
+        session.commit()
+
+        return jsonify({"Message":"User added successfully"}), 201
+    except:
+        print("Error found")
+
 @app.route("/")
 def home():
     if request.method == "GET":
@@ -30,7 +48,7 @@ def home():
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
 
-@app.route("/products")
+@app.route("/products",methods = ["GET","POST"])
 def products():
     if request.method=="GET":
         # fetch data from the database
@@ -53,7 +71,15 @@ def products():
             return jsonify(error), 403
         else:
             # store in the database
-            pass
+            new_product = Product(
+                user_id = user["id"],
+                product_name = data["product_name"],
+                buying_price = float(data["buying_price"]),
+                selling_price = float(data["selling_price"])
+            )
+            session.add(new_product)
+            session.commit()
+            return jsonify({"Message":"A new product has been added successfully"}), 201
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405

@@ -57,10 +57,12 @@ def products():
 
         results = []
         for prod in products:
-            product = {"id":prod.id,
+            product = {
+                "id":prod.id,
                 "product_name":prod.product_name,
-                 "buying_price":prod.buying_price,
-                 "selling_price":prod.selling_price}
+                "buying_price":prod.buying_price,
+                "selling_price":prod.selling_price
+                }
             results.append(product)
         return jsonify(results), 200
     
@@ -92,30 +94,28 @@ def sales():
 
         sales_list = []
         for sale in sales:
-            sal = {"id":sale.id,
+            sal = {
+                "id":sale.id,
                 "user_id":sale.user_id,
-                "sale_date":sale.sale_date}
+                "sale_date":sale.sale_date
+                }
             sales_list.append(sal)
         return jsonify(sales_list), 200
     
     elif request.method=="POST":
         data = request.get_json()
-        if data["sale_date"] == "":
-            error = {"Error":"Ensure all fields are set"}
-            return jsonify(error), 403
-        else:
-            new_sale = Sale(
-                user_id = user["id"],
-                sale_date = data["sale_date"]
+        
+        new_sale = Sale(
+                user_id = user["id"]
             )
-            session.add(new_sale)
-            session.commit()
-            return jsonify({"Message":"A new sale successfully added"}), 201
+        session.add(new_sale)
+        session.commit()
+        return jsonify({"Message":"A new sale successfully added"}), 201
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
 
-@app.route("/sales_details")
+@app.route("/sales_details",methods = ["GET","POST"])
 def sales_details():
     if request.method=="GET":
         query=select(Sales_detail)
@@ -123,25 +123,34 @@ def sales_details():
 
         sales_details = []
         for sal in sales_details:
-            sal_d = {"id":sal.id,
+            sal_d = {
+                "id":sal.id,
                 "product_id":sal.product_id,
-                "sale_id":sal.sale_id,
-                "quantity":sal.quantity}
+                "sales_id":sal.sales_id,
+                "quantity":sal.quantity
+                }
             sales_details.append(sal_d)
         return jsonify(sales_details), 200
     
     elif request.method=="POST":
         data = request.get_json()
-        if data["product_id"] == "" or data["sale_id"] == "" or data["quantity"]:
+        if data["product_id"] == "" or data["sales_id"] == "" or data["quantity"] == "":
             error = {"Error":"Ensure all fields are set"}
             return jsonify(error), 403
         else:
-            pass
+            new_sale_details = Sales_detail(
+                product_id = data["product_id"],
+                sales_id = data["sales_id"],
+                quantity = data["quantity"]
+            )
+            session.add(new_sale_details)
+            session.commit()
+            return jsonify({"Message":"A new sale details has been successful"}), 201
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
 
-@app.route("/purchases")
+@app.route("/purchases",methods = ["GET","POST"])
 def purchases():
     if request.method=="GET":
         query=select(Purchase)
@@ -149,25 +158,34 @@ def purchases():
 
         purchase_list = []
         for purch in purchases:
-            purchase = {"id":purch.id,
-                 "product_id":purch.product_id,
-                 "quantity":purch.quantity,
-                 "buying_price":purch.quantity}
+            purchase = {
+                "id":purch.id,
+                "product_id":purch.product_id,
+                "quantity":purch.quantity,
+                "buying_price":purch.quantity
+                }
             purchase_list.append(purchase)
         return jsonify(purchase_list), 200
 
     elif request.method=="POST":
         data = request.get_json()
-        if data["product_id"] == "" or data["quantity"] == "" or data["buying_price"]:
+        if data["product_id"] == "" or data["quantity"] == "" or data["buying_price"] == "":
                 error = {"Error":"Ensure all fields are set"}
                 return jsonify(error), 403
         else:
-            pass
+            new_purchase = Purchase(
+                product_id = data["product_id"],
+                quantity = data["quantity"],
+                buying_price = float(data["buying_price"])
+            )
+            session.add(new_purchase)
+            session.commit()
+            return jsonify({"Message":"A new purchase has been successfully made"})
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
 
-@app.route("/payments")
+@app.route("/payments",methods = ["GET","POST"])
 def payments():
     if request.method=="GET":
         query=select(Payment)
@@ -175,25 +193,36 @@ def payments():
 
         payment_list = []
         for pay in payments:
-            payment = {"id":pay.id,
-                 "product_id":pay.product_id,
-                 "quantity":pay.quantity,
-                 "buying_price":pay.quantity}
+            payment = {
+                "id":pay.id,
+                "sales_id":pay.sales_id,
+                "amount":pay.amount,
+                "payment_method":pay.payment_method,
+                "payment_status":pay.payment_status
+                }
             payment_list.append(payment)
         return jsonify(payment_list), 200
 
     elif request.method=="POST":
         data = request.get_json()
-        if data["sales_id"] == "" or data["amount"] == "" or data["payment_method"] or data["payment_status"]:
+        if data["sales_id"] == "" or data["amount"] == "" or data["payment_method"] == "" or data["payment_status"] == "":
                 error = {"Error":"Ensure all fields are set"}
                 return jsonify(error), 403
         else:
-            pass
+            new_payment = Payment(
+                sales_id = data["sales_id"],
+                amount = float(data["amount"]),
+                payment_method = data["payment_method"],
+                payment_status = data["payment_status"]
+            )
+            session.add(new_payment)
+            session.commit()
+            return jsonify({"Message":"A new payment has been successfully made"})
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
 
-@app.route("/users")
+@app.route("/users",methods = ["GET","POST"])
 def users():
     if request.method=="GET":
         query=select(User)
@@ -201,21 +230,31 @@ def users():
 
         user_list = []
         for use in users:
-            user = {"id":use.id,
-                 "full_name":use.full_name,
-                 "email":use.email,
-                 "password":use.password,
-                 "phone_number":use.phone_number}
+            user = {
+                "id":use.id,
+                "full_name":use.full_name,
+                "email":use.email,
+                "password":use.password,
+                "phone_number":use.phone_number
+                }
             user_list.append(user)
         return jsonify(user_list), 200
 
     elif request.method=="POST":
         data = request.get_json()
-        if data["full_name"] == "" or data["email"] == "" or data["password"] or data["phone_number"]:
+        if data["full_name"] == "" or data["email"] == "" or data["password"] == "" or data["phone_number"] == "":
                 error = {"Error":"Ensure all fields are set"}
                 return jsonify(error), 403
         else:
-            pass
+            new_user = User(
+                full_name = data["full_name"],
+                email = data["email"],
+                password = data["password"],
+                phone_number = data["phone_number"]
+            )
+            session.add(new_user)
+            session.commit()
+            return jsonify({"Message":"A new user has been added successfully"})
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405

@@ -84,7 +84,7 @@ def products():
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
 
-@app.route("/sales")
+@app.route("/sales",methods = ["GET","POST"])
 def sales():
     if request.method=="GET":
         query=select(Sale)
@@ -100,11 +100,17 @@ def sales():
     
     elif request.method=="POST":
         data = request.get_json()
-        if data["user_id"] == "" or data["sale_date"] == "":
+        if data["sale_date"] == "":
             error = {"Error":"Ensure all fields are set"}
             return jsonify(error), 403
         else:
-            pass
+            new_sale = Sale(
+                user_id = user["id"],
+                sale_date = data["sale_date"]
+            )
+            session.add(new_sale)
+            session.commit()
+            return jsonify({"Message":"A new sale successfully added"}), 201
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405

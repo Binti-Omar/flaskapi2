@@ -115,7 +115,7 @@ def sales():
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
 
-@app.route("/sales_details",methods = ["GET","POST"])
+@app.route("/sales-details",methods = ["GET","POST"])
 def sales_details():
     if request.method=="GET":
         query=select(Sales_detail)

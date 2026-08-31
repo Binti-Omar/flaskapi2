@@ -48,6 +48,8 @@ class Purchase(Base):
     product_id : Mapped[int] = mapped_column(ForeignKey("products.id"))
     quantity : Mapped[int] = mapped_column(Integer)
     buying_price : Mapped[float] = mapped_column(Float)
+    purchase_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+
 
 class Payment(Base):
     __tablename__ = "payments"
@@ -57,3 +59,5 @@ class Payment(Base):
     amount: Mapped[float] = mapped_column(Float)
     payment_method: Mapped[str] = mapped_column(String(30))
     payment_status: Mapped[str] = mapped_column(String(30))
+    payment_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+

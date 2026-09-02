@@ -6,12 +6,14 @@
 # 200 → success,201 → created,400 → bad request,401 → unauthorized,404 — Not Found,409 → conflict (email exists),500 → server error
 
 from flask import Flask,request,jsonify
+from flask_bcrypt import Bcrypt
 from sqlalchemy import create_engine,select
 from sqlalchemy.orm import Session
 from models import Base,Product,Sale,Sales_detail,Purchase,Payment,User
 
 app = Flask(__name__)
 
+bcrypt = Bcrypt(app)
 # Create a connection to the database using sqlalchemy engine
 engine = create_engine("sqlite:///./flask_duka_api.db", echo=True)
 
@@ -258,5 +260,75 @@ def users():
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
+
+@app.route("/register",methods = ["POST"])
+def register():
+    if request.method=="POST":
+        data = request.get_json()
+
+        if data["full_name"] == "" or data["email"] == "" or data["password"] == "" or data["phone_number"] == "":
+            error = {"Error":"Ensure all fields are set"}
+            return jsonify(error), 403
+
+        existing_user = session.query(User).filter_by(email=data["email"]).first()
+
+        if existing_user:
+            return jsonify({"error":"Email already registered"}), 409
+
+        hashed_pw = bcrypt.generate_password_hash(data['password']).decode('utf-8')
+
+        new_user = User(
+            full_name=data["full_name"],
+            email=data["email"],
+            password=hashed_pw,
+            phone_number=data["phone_number"]
+        )
+
+        session.add(new_user)
+        session.commit()
+
+        return jsonify({"Message": "User registered successfully"}), 201
+
+    else:
+        return jsonify({"Message":"Method not allowed"}), 405
+
+@app.route("/login", methods = ["POST"])
+def login():
+    if request.method == "POST":
+        data = request.get_json()
+
+        email=data["email"]
+        password=data["password"]
+        
+        if data["email"] == "" or data["password"] == "":
+            error = {"Error":"Ensure all fields are set"}
+            return jsonify(error), 403
+
+        query = select(User).where(User.email==data["email"])  
+        existing_user = session.scalars(query).first()
+
+        if not existing_user:
+            error = {"Error":"Invalid email"}
+            return jsonify(error), 403
+            
+        if not bcrypt.check_password_hash(existing_user.password, password):
+            error = {"Error":"Invalid password"}
+            return jsonify(error), 403
+
+        return jsonify({
+                "message":"Login successful",
+                "user": {
+                    "id": existing_user.id,
+                    "email":existing_user.email,
+                    "full_name":existing_user.full_name
+                     },
+            }), 200
+    
+    else:
+        return jsonify({"Message":"Method not allowed"}), 405
+
+        
+
+
 
 app.run(debug=True)

@@ -5,15 +5,23 @@
 # 4. You must define a status code(200,201,404,401,500)
 # 200 → success,201 → created,400 → bad request,401 → unauthorized,404 — Not Found,409 → conflict (email exists),500 → server error
 
+from dotenv import load_dotenv
+import os
 from flask import Flask,request,jsonify
 from flask_bcrypt import Bcrypt
+from flask_jwt_extended import JWTManager,jwt_required,create_access_token,get_jwt_identity
 from sqlalchemy import create_engine,select
 from sqlalchemy.orm import Session
 from models import Base,Product,Sale,Sales_detail,Purchase,Payment,User
+load_dotenv()
+
 
 app = Flask(__name__)
-
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
+jwt =  JWTManager(app)
 bcrypt = Bcrypt(app)
+
+
 # Create a connection to the database using sqlalchemy engine
 engine = create_engine("sqlite:///./flask_duka_api.db", echo=True)
 
@@ -37,7 +45,8 @@ def before_request():
         session.add(new_user)
         session.commit()
 
-        return jsonify({"Message":"User added successfully"}), 201
+        message = {"Message":"User added successfully"}
+        return jsonify(message), 201
     except:
         print("Error found")
 
@@ -51,7 +60,12 @@ def home():
         return jsonify(error), 405
 
 @app.route("/products",methods = ["GET","POST"])
+@jwt_required()
 def products():
+    email = get_jwt_identity()
+
+    user = session.scalars(select(User).where(User.email==email)).first()
+
     if request.method=="GET":
         # fetch data from the database
         query = select(Product)
@@ -83,7 +97,9 @@ def products():
             )
             session.add(new_product)
             session.commit()
-            return jsonify({"Message":"A new product has been added successfully"}), 201
+
+            message = {"Message":"Product added successfully"}
+            return jsonify(message), 201
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
@@ -112,7 +128,10 @@ def sales():
             )
         session.add(new_sale)
         session.commit()
-        return jsonify({"Message":"A new sale successfully added"}), 201
+
+        message = {"Message":"User added successfully"}
+        return jsonify(message), 201
+    
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
@@ -147,7 +166,8 @@ def sales_details():
             )
             session.add(new_sale_details)
             session.commit()
-            return jsonify({"Message":"A new sale details has been successful"}), 201
+            message = {"Message":"User added successfully"}
+            return jsonify(message), 201
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
@@ -182,7 +202,9 @@ def purchases():
             )
             session.add(new_purchase)
             session.commit()
-            return jsonify({"Message":"A new purchase has been successfully made"})
+
+            message = {"Message":"User added successfully"}
+            return jsonify(message), 201
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
@@ -219,7 +241,9 @@ def payments():
             )
             session.add(new_payment)
             session.commit()
-            return jsonify({"Message":"A new payment has been successfully made"})
+
+            message = {"Message":"User added successfully"}
+            return jsonify(message), 201
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
@@ -256,7 +280,9 @@ def users():
             )
             session.add(new_user)
             session.commit()
-            return jsonify({"Message":"A new user has been added successfully"})
+
+            message = {"Message":"User added successfully"}
+            return jsonify(message), 201
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
@@ -273,7 +299,8 @@ def register():
         existing_user = session.query(User).filter_by(email=data["email"]).first()
 
         if existing_user:
-            return jsonify({"error":"Email already registered"}), 409
+            error = {"Error":"Email already registered"}
+            return jsonify(error), 403
 
         hashed_pw = bcrypt.generate_password_hash(data['password']).decode('utf-8')
 
@@ -287,10 +314,15 @@ def register():
         session.add(new_user)
         session.commit()
 
-        return jsonify({"Message": "User registered successfully"}), 201
+        token = create_access_token(identity=data["email"])
+
+        message = {"Message":"User added successfully",
+                   "token":token}
+        return jsonify(message), 201
 
     else:
-        return jsonify({"Message":"Method not allowed"}), 405
+        error = {"Error":"Method not allowed"}
+        return jsonify(error), 405
 
 @app.route("/login", methods = ["POST"])
 def login():
@@ -304,7 +336,7 @@ def login():
             error = {"Error":"Ensure all fields are set"}
             return jsonify(error), 403
 
-        query = select(User).where(User.email==data["email"])  
+        query = select(User).where(User.email==email)  
         existing_user = session.scalars(query).first()
 
         if not existing_user:
@@ -315,6 +347,8 @@ def login():
             error = {"Error":"Invalid password"}
             return jsonify(error), 403
 
+        token = create_access_token(identity=email)
+
         return jsonify({
                 "message":"Login successful",
                 "user": {
@@ -322,13 +356,11 @@ def login():
                     "email":existing_user.email,
                     "full_name":existing_user.full_name
                      },
+                "token":token
             }), 200
     
     else:
-        return jsonify({"Message":"Method not allowed"}), 405
-
-        
-
-
+        error = {"Error":"Method not allowed"}
+        return jsonify(error), 405
 
 app.run(debug=True)

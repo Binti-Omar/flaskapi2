@@ -15,12 +15,10 @@ from sqlalchemy.orm import Session
 from models import Base,Product,Sale,Sales_detail,Purchase,Payment,User
 load_dotenv()
 
-
 app = Flask(__name__)
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
 jwt =  JWTManager(app)
 bcrypt = Bcrypt(app)
-
 
 # Create a connection to the database using sqlalchemy engine
 engine = create_engine("sqlite:///./flask_duka_api.db", echo=True)
@@ -105,7 +103,11 @@ def products():
         return jsonify(error), 405
 
 @app.route("/sales",methods = ["GET","POST"])
+@jwt_required()
 def sales():
+    email = get_jwt_identity()
+    
+    user = session.scalars(select(User).where(User.email==email)).first()
     if request.method=="GET":
         query=select(Sale)
         sales=session.scalars(query)
@@ -124,12 +126,12 @@ def sales():
         data = request.get_json()
         
         new_sale = Sale(
-                user_id = user["id"]
+                user_id = user.id
             )
         session.add(new_sale)
         session.commit()
 
-        message = {"Message":"User added successfully"}
+        message = {"Message":"Sales added successfully"}
         return jsonify(message), 201
     
     else:
@@ -137,7 +139,11 @@ def sales():
         return jsonify(error), 405
 
 @app.route("/sales-details",methods = ["GET","POST"])
+@jwt_required()
 def sales_details():
+    email = get_jwt_identity()
+    
+    user = session.scalars(select(User).where(User.email==email)).first()
     if request.method=="GET":
         query=select(Sales_detail)
         sales_details=session.scalars(query)
@@ -166,14 +172,18 @@ def sales_details():
             )
             session.add(new_sale_details)
             session.commit()
-            message = {"Message":"User added successfully"}
+            message = {"Message":"Sales_details added successfully"}
             return jsonify(message), 201
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
 
 @app.route("/purchases",methods = ["GET","POST"])
+@jwt_required()
 def purchases():
+    email = get_jwt_identity()
+    
+    user = session.scalars(select(User).where(User.email==email)).first()
     if request.method=="GET":
         query=select(Purchase)
         purchases=session.scalars(query)
@@ -203,14 +213,18 @@ def purchases():
             session.add(new_purchase)
             session.commit()
 
-            message = {"Message":"User added successfully"}
+            message = {"Message":"Purchases added successfully"}
             return jsonify(message), 201
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
 
 @app.route("/payments",methods = ["GET","POST"])
+@jwt_required()
 def payments():
+    email = get_jwt_identity()
+    
+    user = session.scalars(select(User).where(User.email==email)).first()
     if request.method=="GET":
         query=select(Payment)
         payments=session.scalars(query)
@@ -242,7 +256,7 @@ def payments():
             session.add(new_payment)
             session.commit()
 
-            message = {"Message":"User added successfully"}
+            message = {"Message":"Payments added successfully"}
             return jsonify(message), 201
     else:
         error = {"Error":"Method not allowed"}
@@ -316,7 +330,7 @@ def register():
 
         token = create_access_token(identity=data["email"])
 
-        message = {"Message":"User added successfully",
+        message = {"Message":"User registered successfully",
                    "token":token}
         return jsonify(message), 201
 

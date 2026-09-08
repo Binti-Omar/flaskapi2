@@ -7,6 +7,7 @@
 
 from dotenv import load_dotenv
 import os
+import sentry_sdk
 from flask import Flask,request,jsonify
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager,jwt_required,create_access_token,get_jwt_identity
@@ -14,6 +15,11 @@ from sqlalchemy import create_engine,select
 from sqlalchemy.orm import Session
 from models import Base,Product,Sale,Sales_detail,Purchase,Payment,User
 load_dotenv()
+
+sentry_sdk.init(
+    dsn="https://75ec0a83c7d77ca7a5e97099c3f25279@o4512046182760448.ingest.us.sentry.io/4512051094814720",
+    send_default_pii=True,
+)
 
 app = Flask(__name__)
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
@@ -51,7 +57,7 @@ def before_request():
 @app.route("/")
 def home():
     if request.method == "GET":
-        data = {"Flask API":"Version 1"}
+        data = {"Flask API" : "Version 1"}
         return jsonify(data), 200
     else:
         error = {"Error":"Method not allowed"}
@@ -342,6 +348,7 @@ def register():
 def login():
     if request.method == "POST":
         data = request.get_json()
+        
 
         email=data["email"]
         password=data["password"]

@@ -35,26 +35,16 @@ Base.metadata.create_all(engine)
 # Create a session to do sql transactions
 session = Session(engine)
 
-user = {"id":"1",
-        "full_name":"Binti",
-        "email":"binti@gmail.com",
-        "password":"binti5",
-        "phone_number":"0717238745"}
+allowed_methods = ["GET","POST","DELETE","PATCH","PUT"]
 
 @app.before_request
 def before_request():
     try:
-        print("A request is coming in!")
-        new_user = User(user)
-        session.add(new_user)
-        session.commit()
-
-        message = {"Message":"User added successfully"}
-        return jsonify(message), 201
+        pass
     except:
-        print("Error found")
+        pass
 
-@app.route("/")
+@app.route("/",methods = allowed_methods)
 def home():
     if request.method == "GET":
         data = {"Flask API" : "Version 1"}
@@ -63,325 +53,366 @@ def home():
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
 
-@app.route("/products",methods = ["GET","POST"])
-@jwt_required()
-def products():
-    email = get_jwt_identity()
+@app.route("/register",methods = allowed_methods)
+def register():
+    if request.method=="POST":
+        try:
+            data = request.get_json()
 
-    user = session.scalars(select(User).where(User.email==email)).first()
-
-    if request.method=="GET":
-        # fetch data from the database
-        query = select(Product)
-        products = session.scalars(query)
-
-        results = []
-        for prod in products:
-            product = {
-                "id":prod.id,
-                "product_name":prod.product_name,
-                "buying_price":prod.buying_price,
-                "selling_price":prod.selling_price
-                }
-            results.append(product)
-        return jsonify(results), 200
-    
-    elif request.method=="POST":
-        data = request.get_json()
-        if data["product_name"] == "" or data["buying_price"] =="" or data["selling_price"] == "":
-            error = {"Error":"Ensure all fields are set"}
-            return jsonify(error), 403
-        else:
-            # store in the database
-            new_product = Product(
-                user_id = user["id"],
-                product_name = data["product_name"],
-                buying_price = float(data["buying_price"]),
-                selling_price = float(data["selling_price"])
-            )
-            session.add(new_product)
-            session.commit()
-
-            message = {"Message":"Product added successfully"}
-            return jsonify(message), 201
-    else:
-        error = {"Error":"Method not allowed"}
-        return jsonify(error), 405
-
-@app.route("/sales",methods = ["GET","POST"])
-@jwt_required()
-def sales():
-    email = get_jwt_identity()
-    
-    user = session.scalars(select(User).where(User.email==email)).first()
-    if request.method=="GET":
-        query=select(Sale)
-        sales=session.scalars(query)
-
-        sales_list = []
-        for sale in sales:
-            sal = {
-                "id":sale.id,
-                "user_id":sale.user_id,
-                "sale_date":sale.sale_date
-                }
-            sales_list.append(sal)
-        return jsonify(sales_list), 200
-    
-    elif request.method=="POST":
-        data = request.get_json()
-        
-        new_sale = Sale(
-                user_id = user.id
-            )
-        session.add(new_sale)
-        session.commit()
-
-        message = {"Message":"Sales added successfully"}
-        return jsonify(message), 201
-    
-    else:
-        error = {"Error":"Method not allowed"}
-        return jsonify(error), 405
-
-@app.route("/sales-details",methods = ["GET","POST"])
-@jwt_required()
-def sales_details():
-    email = get_jwt_identity()
-    
-    user = session.scalars(select(User).where(User.email==email)).first()
-    if request.method=="GET":
-        query=select(Sales_detail)
-        sales_details=session.scalars(query)
-
-        sales_details = []
-        for sal in sales_details:
-            sal_d = {
-                "id":sal.id,
-                "product_id":sal.product_id,
-                "sales_id":sal.sales_id,
-                "quantity":sal.quantity
-                }
-            sales_details.append(sal_d)
-        return jsonify(sales_details), 200
-    
-    elif request.method=="POST":
-        data = request.get_json()
-        if data["product_id"] == "" or data["sales_id"] == "" or data["quantity"] == "":
-            error = {"Error":"Ensure all fields are set"}
-            return jsonify(error), 403
-        else:
-            new_sale_details = Sales_detail(
-                product_id = data["product_id"],
-                sales_id = data["sales_id"],
-                quantity = data["quantity"]
-            )
-            session.add(new_sale_details)
-            session.commit()
-            message = {"Message":"Sales_details added successfully"}
-            return jsonify(message), 201
-    else:
-        error = {"Error":"Method not allowed"}
-        return jsonify(error), 405
-
-@app.route("/purchases",methods = ["GET","POST"])
-@jwt_required()
-def purchases():
-    email = get_jwt_identity()
-    
-    user = session.scalars(select(User).where(User.email==email)).first()
-    if request.method=="GET":
-        query=select(Purchase)
-        purchases=session.scalars(query)
-
-        purchase_list = []
-        for purch in purchases:
-            purchase = {
-                "id":purch.id,
-                "product_id":purch.product_id,
-                "quantity":purch.quantity,
-                "buying_price":purch.quantity
-                }
-            purchase_list.append(purchase)
-        return jsonify(purchase_list), 200
-
-    elif request.method=="POST":
-        data = request.get_json()
-        if data["product_id"] == "" or data["quantity"] == "" or data["buying_price"] == "":
+            if not data.get("full_name") or not data.get("email") or not data.get("password") or not data.get("phone_number"):
                 error = {"Error":"Ensure all fields are set"}
                 return jsonify(error), 403
-        else:
-            new_purchase = Purchase(
-                product_id = data["product_id"],
-                quantity = data["quantity"],
-                buying_price = float(data["buying_price"])
-            )
-            session.add(new_purchase)
-            session.commit()
 
-            message = {"Message":"Purchases added successfully"}
-            return jsonify(message), 201
-    else:
-        error = {"Error":"Method not allowed"}
-        return jsonify(error), 405
+            existing_user = session.query(User).filter_by(email=data["email"]).first()
 
-@app.route("/payments",methods = ["GET","POST"])
-@jwt_required()
-def payments():
-    email = get_jwt_identity()
-    
-    user = session.scalars(select(User).where(User.email==email)).first()
-    if request.method=="GET":
-        query=select(Payment)
-        payments=session.scalars(query)
+            if existing_user:
+                error = {"Error":"Email already registered"}
+                return jsonify(error), 409
 
-        payment_list = []
-        for pay in payments:
-            payment = {
-                "id":pay.id,
-                "sales_id":pay.sales_id,
-                "amount":pay.amount,
-                "payment_method":pay.payment_method,
-                "payment_status":pay.payment_status
-                }
-            payment_list.append(payment)
-        return jsonify(payment_list), 200
+            hashed_pw = bcrypt.generate_password_hash(data['password']).decode('utf-8')
 
-    elif request.method=="POST":
-        data = request.get_json()
-        if data["sales_id"] == "" or data["amount"] == "" or data["payment_method"] == "" or data["payment_status"] == "":
-                error = {"Error":"Ensure all fields are set"}
-                return jsonify(error), 403
-        else:
-            new_payment = Payment(
-                sales_id = data["sales_id"],
-                amount = float(data["amount"]),
-                payment_method = data["payment_method"],
-                payment_status = data["payment_status"]
-            )
-            session.add(new_payment)
-            session.commit()
-
-            message = {"Message":"Payments added successfully"}
-            return jsonify(message), 201
-    else:
-        error = {"Error":"Method not allowed"}
-        return jsonify(error), 405
-
-@app.route("/users",methods = ["GET","POST"])
-def users():
-    if request.method=="GET":
-        query=select(User)
-        users=session.scalars(query)
-
-        user_list = []
-        for use in users:
-            user = {
-                "id":use.id,
-                "full_name":use.full_name,
-                "email":use.email,
-                "password":use.password,
-                "phone_number":use.phone_number
-                }
-            user_list.append(user)
-        return jsonify(user_list), 200
-
-    elif request.method=="POST":
-        data = request.get_json()
-        if data["full_name"] == "" or data["email"] == "" or data["password"] == "" or data["phone_number"] == "":
-                error = {"Error":"Ensure all fields are set"}
-                return jsonify(error), 403
-        else:
             new_user = User(
-                full_name = data["full_name"],
-                email = data["email"],
-                password = data["password"],
-                phone_number = data["phone_number"]
+                full_name=data["full_name"],
+                email=data["email"],
+                password=hashed_pw,
+                phone_number=data["phone_number"]
             )
+
             session.add(new_user)
             session.commit()
 
-            message = {"Message":"User added successfully"}
+            token = create_access_token(identity=data["email"])
+
+            message = {"Message":"User registered successfully",
+                    "token":token}
             return jsonify(message), 201
+        
+        except Exception as e:
+            sentry_sdk.capture_exception(e)
+            return jsonify({"error": "Something went wrong"}), 500
+        
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
 
-@app.route("/register",methods = ["POST"])
-def register():
-    if request.method=="POST":
-        data = request.get_json()
-
-        if data["full_name"] == "" or data["email"] == "" or data["password"] == "" or data["phone_number"] == "":
-            error = {"Error":"Ensure all fields are set"}
-            return jsonify(error), 403
-
-        existing_user = session.query(User).filter_by(email=data["email"]).first()
-
-        if existing_user:
-            error = {"Error":"Email already registered"}
-            return jsonify(error), 403
-
-        hashed_pw = bcrypt.generate_password_hash(data['password']).decode('utf-8')
-
-        new_user = User(
-            full_name=data["full_name"],
-            email=data["email"],
-            password=hashed_pw,
-            phone_number=data["phone_number"]
-        )
-
-        session.add(new_user)
-        session.commit()
-
-        token = create_access_token(identity=data["email"])
-
-        message = {"Message":"User registered successfully",
-                   "token":token}
-        return jsonify(message), 201
-
-    else:
-        error = {"Error":"Method not allowed"}
-        return jsonify(error), 405
-
-@app.route("/login", methods = ["POST"])
+@app.route("/login", methods = allowed_methods)
 def login():
     if request.method == "POST":
-        data = request.get_json()
-        
+        try:
+            data = request.get_json()
 
-        email=data["email"]
-        password=data["password"]
-        
-        if data["email"] == "" or data["password"] == "":
-            error = {"Error":"Ensure all fields are set"}
-            return jsonify(error), 403
-
-        query = select(User).where(User.email==email)  
-        existing_user = session.scalars(query).first()
-
-        if not existing_user:
-            error = {"Error":"Invalid email"}
-            return jsonify(error), 403
+            if not data.get("email") or not data.get("password"):
+                error = {"Error":"Ensure all fields are set"}
+                return jsonify(error), 403
             
-        if not bcrypt.check_password_hash(existing_user.password, password):
-            error = {"Error":"Invalid password"}
-            return jsonify(error), 403
+            email=data["email"]
+            password=data["password"]
+            
+            query = select(User).where(User.email==email)  
+            existing_user = session.scalars(query).first()
 
-        token = create_access_token(identity=email)
+            if not existing_user:
+                error = {"Error":"Invalid email"}
+                return jsonify(error), 403
+                
+            if not bcrypt.check_password_hash(existing_user.password, password):
+                error = {"Error":"Invalid password"}
+                return jsonify(error), 403
 
-        return jsonify({
-                "message":"Login successful",
-                "user": {
-                    "id": existing_user.id,
-                    "email":existing_user.email,
-                    "full_name":existing_user.full_name
-                     },
-                "token":token
-            }), 200
+            token = create_access_token(identity=email)
+
+            return jsonify({
+                    "message":"Login successful",
+                    "user": {
+                        "id": existing_user.id,
+                        "email":existing_user.email,
+                        "full_name":existing_user.full_name
+                        },
+                    "token":token
+                }), 200
+        
+        except Exception as e:
+                sentry_sdk.capture_exception(e)
+                return jsonify({"error": "Something went wrong"}), 500
     
     else:
         error = {"Error":"Method not allowed"}
         return jsonify(error), 405
+
+@app.route("/products",methods = allowed_methods)
+@jwt_required()
+def products():
+    try:
+        email = get_jwt_identity()
+
+        user = session.scalars(select(User).where(User.email==email)).first()
+
+        if request.method=="GET":
+            # fetch data from the database
+            query = select(Product)
+            products = session.scalars(query)
+
+            products_list = []
+            for prod in products:
+                product = {
+                    "id":prod.id,
+                    "product_name":prod.product_name,
+                    "buying_price":prod.buying_price,
+                    "selling_price":prod.selling_price
+                    }
+                products_list.append(product)
+            return jsonify(products_list), 200
+        
+        elif request.method=="POST":
+            data = request.get_json()
+            if not data.get("product_name") or not data.get("buying_price") or not data.get("selling_price"):
+                error = {"Error":"Ensure all fields are set"}
+                return jsonify(error), 403
+            else:
+                # store in the database
+                new_product = Product(
+                    user_id = user.id,
+                    product_name = data["product_name"],
+                    buying_price = float(data["buying_price"]),
+                    selling_price = float(data["selling_price"])
+                )
+                session.add(new_product)
+                session.commit()
+
+                message = {"Message":"Product added successfully"}
+                return jsonify(message), 201
+        else:
+            error = {"Error":"Method not allowed"}
+            return jsonify(error), 405
+        
+    except Exception as e:
+            sentry_sdk.capture_exception(e)
+            return jsonify({"error": "Something went wrong"}), 500
+
+@app.route("/sales",methods = allowed_methods)
+@jwt_required()
+def sales():
+    try:
+        email = get_jwt_identity()
+        
+        user = session.scalars(select(User).where(User.email==email)).first()
+        if request.method=="GET":
+            query=select(Sale)
+            sales=session.scalars(query)
+
+            sales_list = []
+            for sale in sales:
+                sal = {
+                    "id":sale.id,
+                    "user_id":sale.user_id,
+                    "sale_date":sale.sale_date
+                    }
+                sales_list.append(sal)
+            return jsonify(sales_list), 200
+        
+        elif request.method=="POST":
+            data = request.get_json()
+            
+            new_sale = Sale(
+                    user_id = user.id
+                )
+            session.add(new_sale)
+            session.commit()
+
+            message = {"Message":"Sales added successfully"}
+            return jsonify(message), 201
+        
+        else:
+            error = {"Error":"Method not allowed"}
+            return jsonify(error), 405
+        
+    except Exception as e:
+            sentry_sdk.capture_exception(e)
+            return jsonify({"error": "Something went wrong"}), 500
+    
+@app.route("/sales-details",methods = allowed_methods)
+@jwt_required()
+def sales_details():
+    try:
+        email = get_jwt_identity()
+        
+        user = session.scalars(select(User).where(User.email==email)).first()
+        if request.method=="GET":
+            query=select(Sales_detail)
+            sales_details=session.scalars(query)
+
+            sales_details_list = []
+            for sal in sales_details:
+                sal_d = {
+                    "id":sal.id,
+                    "product_id":sal.product_id,
+                    "sales_id":sal.sales_id,
+                    "quantity":sal.quantity
+                    }
+                sales_details_list.append(sal_d)
+            return jsonify(sales_details_list), 200
+        
+        elif request.method=="POST":
+            data = request.get_json()
+            if not data.get("product_id") or not data.get("sales_id") or not data.get("quantity"):
+                error = {"Error":"Ensure all fields are set"}
+                return jsonify(error), 403
+            else:
+                new_sale_details = Sales_detail(
+                    product_id = data["product_id"],
+                    sales_id = data["sales_id"],
+                    quantity = data["quantity"]
+                )
+                session.add(new_sale_details)
+                session.commit()
+                message = {"Message":"Sales_details added successfully"}
+                return jsonify(message), 201
+        else:
+            error = {"Error":"Method not allowed"}
+            return jsonify(error), 405
+        
+    except Exception as e:
+                sentry_sdk.capture_exception(e)
+                return jsonify({"error": "Something went wrong"}), 500
+    
+@app.route("/purchases",methods = allowed_methods)
+@jwt_required()
+def purchases():
+    try:
+        email = get_jwt_identity()
+        
+        user = session.scalars(select(User).where(User.email==email)).first()
+        if request.method=="GET":
+            query=select(Purchase)
+            purchases=session.scalars(query)
+
+            purchase_list = []
+            for purch in purchases:
+                purchase = {
+                    "id":purch.id,
+                    "product_id":purch.product_id,
+                    "quantity":purch.quantity,
+                    "buying_price":purch.buying_price
+                    }
+                purchase_list.append(purchase)
+            return jsonify(purchase_list), 200
+
+        elif request.method=="POST":
+            data = request.get_json()
+            if not data.get("product_id") or not data.get("quantity") or not data.get("buying_price"):
+                    error = {"Error":"Ensure all fields are set"}
+                    return jsonify(error), 403
+            else:
+                new_purchase = Purchase(
+                    product_id = data["product_id"],
+                    quantity = data["quantity"],
+                    buying_price = float(data["buying_price"])
+                )
+                session.add(new_purchase)
+                session.commit()
+
+                message = {"Message":"Purchases added successfully"}
+                return jsonify(message), 201
+        else:
+            error = {"Error":"Method not allowed"}
+            return jsonify(error), 405
+        
+    except Exception as e:
+            sentry_sdk.capture_exception(e)
+            return jsonify({"error": "Something went wrong"}), 500
+    
+@app.route("/payments",methods = allowed_methods)
+@jwt_required()
+def payments():
+    try:
+        email = get_jwt_identity()
+        
+        user = session.scalars(select(User).where(User.email==email)).first()
+        if request.method=="GET":
+            query=select(Payment)
+            payments=session.scalars(query)
+
+            payment_list = []
+            for pay in payments:
+                payment = {
+                    "id":pay.id,
+                    "sales_id":pay.sales_id,
+                    "amount":pay.amount,
+                    "payment_method":pay.payment_method,
+                    "payment_status":pay.payment_status
+                    }
+                payment_list.append(payment)
+            return jsonify(payment_list), 200
+
+        elif request.method=="POST":
+            data = request.get_json()
+            if not data.get("sales_id") or not data.get("amount") or not data.get("payment_method") or not data.get("payment_status"):
+                    error = {"Error":"Ensure all fields are set"}
+                    return jsonify(error), 403
+            else:
+                new_payment = Payment(
+                    sales_id = data["sales_id"],
+                    amount = float(data["amount"]),
+                    payment_method = data["payment_method"],
+                    payment_status = data["payment_status"]
+                )
+                session.add(new_payment)
+                session.commit()
+
+                message = {"Message":"Payments added successfully"}
+                return jsonify(message), 201
+        else:
+            error = {"Error":"Method not allowed"}
+            return jsonify(error), 405
+        
+    except Exception as e:
+            sentry_sdk.capture_exception(e)
+            return jsonify({"error": "Something went wrong"}), 500
+    
+@app.route("/users",methods = allowed_methods)
+def users():
+    try:
+        if request.method=="GET":
+            query=select(User)
+            users=session.scalars(query)
+
+            user_list = []
+            for use in users:
+                user = {
+                    "id":use.id,
+                    "full_name":use.full_name,
+                    "email":use.email,
+                    "phone_number":use.phone_number
+                    }
+                user_list.append(user)
+            return jsonify(user_list), 200
+
+        elif request.method=="POST":
+            data = request.get_json()
+            if not data.get("full_name") or not data.get("email") or not data.get("password") or not data.get("phone_number"):
+                    error = {"Error":"Ensure all fields are set"}
+                    return jsonify(error), 403
+            else:
+                hashed_pw = bcrypt.generate_password_hash(data['password']).decode('utf-8')
+
+                new_user = User(
+                    full_name = data["full_name"],
+                    email = data["email"],
+                    password = hashed_pw,
+                    phone_number = data["phone_number"]
+                )
+                session.add(new_user)
+                session.commit()
+
+                message = {"Message":"User added successfully"}
+                return jsonify(message), 201
+        else:
+            error = {"Error":"Method not allowed"}
+            return jsonify(error), 405
+        
+    except Exception as e:
+            sentry_sdk.capture_exception(e)
+            return jsonify({"error": "Something went wrong"}), 500
+
 
 app.run(debug=True)

@@ -2,7 +2,7 @@
 # 1. Data is transferred as key value-pairs called JSON.Sending from JS as JSON Object and from python as dictionary
 # 2. You must define routes/URL 
 # 3. You must define a HTTP method(GET,POST,PUT,DELETE,PATCH)
-# 4. You must define a status code(200,201,404,401,500)
+# 4. You must define a status code(200,201,400,401,404,500)
 # 200 → success,201 → created,400 → bad request,401 → unauthorized,404 — Not Found,409 → conflict (email exists),500 → server error
 
 from dotenv import load_dotenv

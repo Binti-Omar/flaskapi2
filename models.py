@@ -50,7 +50,6 @@ class Purchase(Base):
     buying_price : Mapped[float] = mapped_column(Float)
     purchase_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
-
 class Payment(Base):
     __tablename__ = "payments"
 

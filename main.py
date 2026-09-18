@@ -10,6 +10,7 @@ import os
 import sentry_sdk
 from flask import Flask,request,jsonify
 from flask_bcrypt import Bcrypt
+from flask_cors import CORS
 from flask_jwt_extended import JWTManager,jwt_required,create_access_token,get_jwt_identity
 from sqlalchemy import create_engine,select
 from sqlalchemy.orm import Session
@@ -22,8 +23,13 @@ sentry_sdk.init(
 )
 
 app = Flask(__name__)
+
+CORS(app)
+
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
+
 jwt =  JWTManager(app)
+
 bcrypt = Bcrypt(app)
 
 # Create a connection to the database using sqlalchemy engine

@@ -24,7 +24,10 @@ sentry_sdk.init(
 
 app = Flask(__name__)
 
-CORS(app)
+CORS(app,resources={ r"/*":{
+    "origins":"*",
+    "allow_headers":["Content-Type","Authorization"]
+}})
 
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
 
@@ -61,45 +64,46 @@ def home():
 
 @app.route("/register",methods = allowed_methods)
 def register():
-    if request.method=="POST":
         try:
-            data = request.get_json()
+            if request.method=="POST":
 
-            if not data.get("full_name") or not data.get("email") or not data.get("password") or not data.get("phone_number"):
-                error = {"Error":"Ensure all fields are set"}
-                return jsonify(error), 403
+                data = request.get_json()
 
-            existing_user = session.query(User).filter_by(email=data["email"]).first()
+                if not data.get("full_name") or not data.get("email") or not data.get("password") or not data.get("phone_number"):
+                    error = {"Error":"Ensure all fields are set"}
+                    return jsonify(error), 403
 
-            if existing_user:
-                error = {"Error":"Email already registered"}
-                return jsonify(error), 409
+                existing_user = session.query(User).filter_by(email=data["email"]).first()
 
-            hashed_pw = bcrypt.generate_password_hash(data['password']).decode('utf-8')
+                if existing_user:
+                    error = {"Error":"Email already registered"}
+                    return jsonify(error), 409
 
-            new_user = User(
-                full_name=data["full_name"],
-                email=data["email"],
-                password=hashed_pw,
-                phone_number=data["phone_number"]
-            )
+                hashed_pw = bcrypt.generate_password_hash(data['password']).decode('utf-8')
 
-            session.add(new_user)
-            session.commit()
+                new_user = User(
+                    full_name=data["full_name"],
+                    email=data["email"],
+                    password=hashed_pw,
+                    phone_number=data["phone_number"]
+                )
 
-            token = create_access_token(identity=data["email"])
+                session.add(new_user)
+                session.commit()
 
-            message = {"Message":"User registered successfully",
-                    "token":token}
-            return jsonify(message), 201
-        
+                token = create_access_token(identity=data["email"])
+
+                message = {"Message":"User registered successfully",
+                        "token":token}
+                return jsonify(message), 201
+
+            else:
+                error = {"Error":"Method not allowed"}
+                return jsonify(error), 405
+
         except Exception as e:
             sentry_sdk.capture_exception(e)
             return jsonify({"error": "Something went wrong"}), 500
-        
-    else:
-        error = {"Error":"Method not allowed"}
-        return jsonify(error), 405
 
 @app.route("/login", methods = allowed_methods)
 def login():

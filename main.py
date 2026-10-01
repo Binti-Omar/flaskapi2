@@ -93,9 +93,15 @@ def register():
 
                 token = create_access_token(identity=data["email"])
 
-                message = {"Message":"User registered successfully",
-                        "token":token}
-                return jsonify(message), 201
+                return jsonify({
+                                    "message":"User registered successfully",
+                                    "user": {
+                                        "id": new_user.id,
+                                        "full_name":new_user.full_name,
+                                        "email":new_user.email,
+                                        },
+                                    "token":token
+                                }), 201
 
             else:
                 error = {"Error":"Method not allowed"}

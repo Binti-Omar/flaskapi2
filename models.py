@@ -25,6 +25,7 @@ class Product(Base):
     product_name : Mapped[str] = mapped_column(String(100))
     buying_price : Mapped[float] = mapped_column(Float)
     selling_price : Mapped[float] = mapped_column(Float)
+    created_at : Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
 class Sale(Base):
     __tablename__ = "sales"

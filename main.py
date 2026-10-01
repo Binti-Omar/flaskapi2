@@ -16,6 +16,7 @@ from sqlalchemy import create_engine,select
 from sqlalchemy.orm import Session
 from models import Base,Product,Sale,Sales_detail,Purchase,Payment,User
 load_dotenv()
+from datetime import datetime,timedelta
 
 sentry_sdk.init(
     dsn="https://75ec0a83c7d77ca7a5e97099c3f25279@o4512046182760448.ingest.us.sentry.io/4512051094814720",
@@ -174,7 +175,8 @@ def products():
                     "id":prod.id,
                     "product_name":prod.product_name,
                     "buying_price":prod.buying_price,
-                    "selling_price":prod.selling_price
+                    "selling_price":prod.selling_price,
+                    "created_at":prod.created_at
                     }
                 products_list.append(product)
             return jsonify(products_list), 200
@@ -190,12 +192,22 @@ def products():
                     user_id = user.id,
                     product_name = data["product_name"],
                     buying_price = float(data["buying_price"]),
-                    selling_price = float(data["selling_price"])
+                    selling_price = float(data["selling_price"]),
+                    created_at = datetime.utcnow()
                 )
                 session.add(new_product)
                 session.commit()
 
-                message = {"Message":"Product added successfully"}
+                message = {"Message":"Product added successfully",
+                           "data":[
+                                {
+                                     "id":new_product.id,
+                                     "name":new_product.product_name,
+                                     "buying_price":new_product.buying_price,
+                                     "selling_price":new_product.selling_price,
+                                     "created_at":new_product.created_at
+                                }
+                           ]}
                 return jsonify(message), 201
         else:
             error = {"Error":"Method not allowed"}

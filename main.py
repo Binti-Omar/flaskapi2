@@ -232,7 +232,8 @@ def sales():
             for sale in sales:
                 sal = {
                     "id":sale.id,
-                    "user_id":sale.user_id,
+                    "product_name":sale.product_name,
+                    "amount":sale.amount,
                     "sale_date":sale.sale_date
                     }
                 sales_list.append(sal)
@@ -240,12 +241,16 @@ def sales():
         
         elif request.method=="POST":
             data = request.get_json()
-            
-            new_sale = Sale(
-                    user_id = user.id
-                )
-            session.add(new_sale)
-            session.commit()
+            if not data.get("product_id") or not data.get("amount"):
+                            error = {"Error":"Ensure all fields are set"}
+                            return jsonify(error), 403
+            else:
+                new_sale = Sale(
+                        product_id = data["product.id"],
+                        amount = float(data["amount"])
+                    )
+                session.add(new_sale)
+                session.commit()
 
             message = {"Message":"Sales added successfully"}
             return jsonify(message), 201
@@ -441,6 +446,8 @@ def users():
     except Exception as e:
             sentry_sdk.capture_exception(e)
             return jsonify({"error": "Something went wrong"}), 500
+
+    # logout
 
 
 app.run(debug=True)

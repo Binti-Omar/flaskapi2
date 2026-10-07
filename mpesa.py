@@ -38,9 +38,12 @@ def get_mpesa_access_token():
         print(str(e), "error getting access token")
         raise e
 
+# This function receives payment information stored in payload.
 def make_stk_push(payload):
+    # Getting amount,phone number and the sale ID
     amount = payload['amount']
     phone_number = payload['phone_number']
+    # The .get() is useful because if sale_id doesn't exist, Python returns none not a keyerror
     sale_id = payload.get('sale_id')  
 
     # Dynamically generate token and password on every push
@@ -50,18 +53,26 @@ def make_stk_push(payload):
         "Content-Type": "application/json"
     }
 
+    # getting the password and timestamp
     password, timestamp = generate_password_and_timestamp()
 
+    # api gives safaricom everything it needs to create this payment request.
     push_data = {
         "BusinessShortCode": saf_short_code,
         "Password": password,
         "Timestamp": timestamp,
+        # This tells M-Pesa what type of transaction you're requesting.In this case:Customer is paying your PayBill online.
         "TransactionType": "CustomerPayBillOnline",
         "Amount": math.ceil(float(amount)),
+        # This is the customer's phone number or the person paying.
         "PartyA": phone_number,
         "PartyB": saf_short_code,
+        # This is the customer's phone number or the person paying.
         "PhoneNumber": phone_number,
+        # After the customer responds to the STK prompt, Safaricom needs to tell your Flask application what happened.
+        # CallBackURL is the address Safaricom uses to report the result of the payment.
         "CallBackURL": my_callback_url,
+        # This connects the M-Pesa payment to your sale.
         "AccountReference": str(payload.get('sale_id')),
         "TransactionDesc": "description of the transaction",
     }

@@ -217,6 +217,31 @@ def products():
             sentry_sdk.capture_exception(e)
             return jsonify({"error": "Something went wrong"}), 500
 
+@app.route("/update_products", methods = allowed_methods)
+@jwt_required()
+def update_product():
+    if request.method=="PUT":
+        data = request.get_json()
+        print(data)
+
+        product = session.scalars(select(Product).where(Product.id==data["id"]))
+
+        if not product:
+            return jsonify({
+                "Error": "Product not found"
+            }), 404
+
+        product.product_name = data["product_name"]
+        product.buying_price = float(data["buying_price"])
+        product.selling_price = float(data["selling_price"])
+
+        session.commit()
+
+        return jsonify({
+            "Message": "Product updated successfully"
+        }), 200
+    # return jsonify({"error":"method not allowed"}), 405
+
 @app.route("/sales",methods = allowed_methods)
 @jwt_required()
 def sales():

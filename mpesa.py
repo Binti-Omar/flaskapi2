@@ -11,7 +11,7 @@ saf_api_url = os.getenv("SAF_API_URL")
 saf_short_code = os.getenv("SAF_SHORT_CODE")
 saf_passkey = os.getenv("SAF_PASSKEY")
 saf_stk_pushurl =  os.getenv("SAF_STK_PUSHURL")
-my_callback_url = os.getenv("MY_CALLback_URL")
+my_callback_url = os.getenv("MY_CALLBACK_URL")
 
 def generate_password_and_timestamp():
     # This gets the current date and time since M-Pesa requires this timestamp when making an STK Push.
@@ -40,11 +40,12 @@ def get_mpesa_access_token():
 
 # This function receives payment information stored in payload.
 def make_stk_push(payload):
+    # print(payload)
     # Getting amount,phone number and the sale ID
     amount = payload['amount']
     phone_number = payload['phone_number']
     # The .get() is useful because if sale_id doesn't exist, Python returns none not a keyerror
-    sale_id = payload.get('sale_id')  
+    sales_id = payload.get('sales_id')  
 
     # Dynamically generate token and password on every push
     token = get_mpesa_access_token()

@@ -1,3 +1,4 @@
+# TimestampMixin is used in tables that need to have date/created at it creates the date automatically eg:class Product(TimestampMixin,Base)
 from sqlalchemy import ForeignKey
 from sqlalchemy import String,Integer,Float,DateTime
 from sqlalchemy.orm import DeclarativeBase
@@ -58,7 +59,10 @@ class Payment(Base):
     id : Mapped[int] = mapped_column(Integer, primary_key=True)
     sales_id : Mapped[int] = mapped_column(ForeignKey("sales.id"))
     amount: Mapped[float] = mapped_column(Float)
-    payment_method: Mapped[str] = mapped_column(String(30))
-    payment_status: Mapped[str] = mapped_column(String(30))
+    transaction_code:Mapped[str] = mapped_column(String)
+    mrid:Mapped[str] = mapped_column(String)
+    crid:Mapped[str] = mapped_column(String)
+    payment_status: Mapped[str] = mapped_column(String, default="pending", nullable=True)
+    phone_number: Mapped[str] = mapped_column(String)
     payment_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 

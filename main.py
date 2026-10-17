@@ -15,8 +15,10 @@ from flask_jwt_extended import JWTManager,jwt_required,create_access_token,get_j
 from sqlalchemy import create_engine,select
 from sqlalchemy.orm import Session
 from models import Base,Product,Sale,Sales_detail,Purchase,Payment,User
-load_dotenv()
+from mpesa import make_stk_push
 from datetime import datetime,timedelta
+from generate_receipts import create_pdf
+load_dotenv()
 
 sentry_sdk.init(
     dsn="https://75ec0a83c7d77ca7a5e97099c3f25279@o4512046182760448.ingest.us.sentry.io/4512051094814720",
@@ -474,5 +476,101 @@ def users():
 
     # logout
 
+@app.route("/stk_push",methods = allowed_methods)
+def stk_push():
+    try:
+        payload = request.get_json()
+        print(payload)
+        response = make_stk_push(payload)
+        new_payment = Payment(sales_id = payload["sales_id"],
+                     amount = payload["amount"],
+                     phone_number = payload["phone_number"],
+                     mrid = response.get("MerchantRequestID"),
+                     crid = response.get("CheckoutRequestID"),
+                     transaction_code = "null",
+                     payment_status = "pending")
+
+        session.add(new_payment)
+        session.commit()
+
+        return {"Message":"stk push initiated"}, 200
+    except Exception as e:
+         print(f"stk push error {e}")
+         return jsonify ({"error":"stk push failed"}), 500
+
+# @app.route("/saf-callback",methods = allowed_methods)
+# def saf_callback():
+#     try:
+#           payload = request.get_json()
+#           body = payload.get("Body",{})
+#           stkCallback = body.get("stkCallback",{})
+#           result_code = stkCallback.get("ResultCode")
+#           mrid = stkCallback.get("MerchantRequestID")
+#           crid = stkCallback.get("CheckoutRequestID")
+#           payment = session.scalars(select(Payment).where(Payment.mrid == mrid,Payment.crid == crid)).first()
+#           if payment:
+#                 if result_code == 0:
+#                     callback_metadata = stkCallback.get("CallbackMetadata",{}).get("Item", [])
+#                     for item in callback_metadata:
+#                         if item.get("Name") == "MpesaReceiptNumber":
+#                             payment.transaction_code = item.get("Value")
+#                             payment.payment_status = "completed"
+
+#                             session.commit()
+#                             text =f"transaction_code:{payment.transaction_code},amount:{payment.amount},Date:{payment.payment_date}"
+#                             create_pdf(text,payment.transaction_code)
+#                         else:
+#                              return{"message":"receipt number not found"}
+#                 else:
+#                     return{"message":"payment unsucessfull"}
+#           else:
+#             return{"message":"payment not found"} 
+#     except Exception as e:
+#         print({"Message":"Error Processing Callback"})
+#         print(f"stk push error {e}")
+#         session.rollback()
+#     return {"Message":"callback received"}
+
+# SAF CALLBACK
+@app.route('/saf-callback', methods=allowed_methods)
+def saf_callback():
+    try:
+        payload=request.get_json()
+        body=payload.get(
+            'Body',{}
+        )
+        stkCallback=body.get('stkCallback',{})
+        result_code=stkCallback.get('ResultCode')
+        mrid = stkCallback.get('MerchantRequestID')
+        crid = stkCallback.get('CheckoutRequestID')
+
+        payment=session.scalars(select(Payment).where(Payment.mrid == mrid, Payment.crid == crid)).first()
+
+        if payment:
+            if result_code == 0:
+                callback_metadata = stkCallback.get('CallbackMetadata', {}).get('Item', [])
+                for item in callback_metadata:
+                    if item.get('Name') == 'MpesaReceiptNumber':
+                        payment.transaction_code = item.get('Value')
+                payment.payment_status = "completed"
+            else:
+                payment.payment_status = "failed"
+
+            # Commit payment status FIRST — this is critical
+            session.commit()
+
+            text = f"Trans Code: {payment.transaction_code}, Amount:{payment.amount}, Date:{payment.payment_date}"
+            create_pdf(text, payment.transaction_code)
+
+    except Exception as e:
+        print({"Error for callback",e})
+        session.rollback()
+    return {"message":"callback received"}
+
+@app.route("/payment",methods = allowed_methods)
+def payment():
+     query = select(Payment)
+     payment = session.scalars(query).all()
+     return  payment
 
 app.run(debug=True)

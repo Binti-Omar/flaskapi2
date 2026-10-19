@@ -498,39 +498,6 @@ def stk_push():
          print(f"stk push error {e}")
          return jsonify ({"error":"stk push failed"}), 500
 
-# @app.route("/saf-callback",methods = allowed_methods)
-# def saf_callback():
-#     try:
-#           payload = request.get_json()
-#           body = payload.get("Body",{})
-#           stkCallback = body.get("stkCallback",{})
-#           result_code = stkCallback.get("ResultCode")
-#           mrid = stkCallback.get("MerchantRequestID")
-#           crid = stkCallback.get("CheckoutRequestID")
-#           payment = session.scalars(select(Payment).where(Payment.mrid == mrid,Payment.crid == crid)).first()
-#           if payment:
-#                 if result_code == 0:
-#                     callback_metadata = stkCallback.get("CallbackMetadata",{}).get("Item", [])
-#                     for item in callback_metadata:
-#                         if item.get("Name") == "MpesaReceiptNumber":
-#                             payment.transaction_code = item.get("Value")
-#                             payment.payment_status = "completed"
-
-#                             session.commit()
-#                             text =f"transaction_code:{payment.transaction_code},amount:{payment.amount},Date:{payment.payment_date}"
-#                             create_pdf(text,payment.transaction_code)
-#                         else:
-#                              return{"message":"receipt number not found"}
-#                 else:
-#                     return{"message":"payment unsucessfull"}
-#           else:
-#             return{"message":"payment not found"} 
-#     except Exception as e:
-#         print({"Message":"Error Processing Callback"})
-#         print(f"stk push error {e}")
-#         session.rollback()
-#     return {"Message":"callback received"}
-
 # SAF CALLBACK
 @app.route('/saf-callback', methods=allowed_methods)
 def saf_callback():

@@ -32,7 +32,7 @@ class Sale(Base):
     __tablename__ = "sales"
     
     id : Mapped[int] = mapped_column(Integer, primary_key=True)
-    product_name : Mapped[int] = mapped_column(ForeignKey("products.id"))
+    product_id : Mapped[int] = mapped_column(ForeignKey("products.id"))
     amount : Mapped[float] = mapped_column(Float)
     sale_date: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
@@ -59,7 +59,7 @@ class Payment(Base):
     id : Mapped[int] = mapped_column(Integer, primary_key=True)
     sales_id : Mapped[int] = mapped_column(ForeignKey("sales.id"))
     amount: Mapped[float] = mapped_column(Float)
-    transaction_code:Mapped[str] = mapped_column(String)
+    transaction_code:Mapped[str] = mapped_column(String, nullable=True)
     mrid:Mapped[str] = mapped_column(String)
     crid:Mapped[str] = mapped_column(String)
     payment_status: Mapped[str] = mapped_column(String, default="pending", nullable=True)

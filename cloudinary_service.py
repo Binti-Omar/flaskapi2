@@ -26,7 +26,7 @@ def upload_pdf(pdf_file):
         print("successful cloudinary upload")
         print(receipt_url)
         # send email
-        # email("chombobintiomar5@gmail.com","Payment received",f"Thank you we have received your.\n\n")
+        email("chombobintiomar5@gmail.com","Payment received",f"Thank you we have received your payment.\n\n" f"Receipt: {receipt_url}")
 
         return "success"
     except Exception as e:

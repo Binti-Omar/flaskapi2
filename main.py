@@ -116,47 +116,46 @@ def register():
 
 @app.route("/login", methods = allowed_methods)
 def login():
-    if request.method == "POST":
         try:
-            data = request.get_json()
+            if request.method == "POST":
 
-            if not data.get("email") or not data.get("password"):
-                error = {"Error":"Ensure all fields are set"}
-                return jsonify(error), 403
-            
-            email=data["email"]
-            password=data["password"]
-            
-            query = select(User).where(User.email==email)  
-            existing_user = session.scalars(query).first()
+                data = request.get_json()
 
-            if not existing_user:
-                error = {"Error":"Invalid email"}
-                return jsonify(error), 403
+                if not data.get("email") or not data.get("password"):
+                    error = {"Error":"Ensure all fields are set"}
+                    return jsonify(error), 403
                 
-            if not bcrypt.check_password_hash(existing_user.password, password):
-                error = {"Error":"Invalid password"}
-                return jsonify(error), 403
+                email=data["email"]
+                password=data["password"]
+                
+                query = select(User).where(User.email==email)  
+                existing_user = session.scalars(query).first()
 
-            token = create_access_token(identity=email)
+                if not existing_user:
+                    error = {"Error":"Invalid email"}
+                    return jsonify(error), 403
+                    
+                if not bcrypt.check_password_hash(existing_user.password, password):
+                    error = {"Error":"Invalid password"}
+                    return jsonify(error), 403
 
-            return jsonify({
-                    "message":"Login successful",
-                    "user": {
-                        "id": existing_user.id,
-                        "email":existing_user.email,
-                        "full_name":existing_user.full_name
-                        },
-                    "token":token
-                }), 200
-        
+                token = create_access_token(identity=email)
+
+                return jsonify({
+                        "message":"Login successfully",
+                        "user": {
+                            "id": existing_user.id,
+                            "email":existing_user.email,
+                            "full_name":existing_user.full_name
+                            },
+                        "token":token
+                    }), 200
+            else:
+                error = {"Error":"Method not allowed"}
+                return jsonify(error), 405
         except Exception as e:
-                sentry_sdk.capture_exception(e)
-                return jsonify({"error": "Something went wrong"}), 500
-    
-    else:
-        error = {"Error":"Method not allowed"}
-        return jsonify(error), 405
+            sentry_sdk.capture_exception(e)
+            return jsonify({"error": "Something went wrong"}), 500
 
 @app.route("/products",methods = allowed_methods)
 @jwt_required()
@@ -259,7 +258,7 @@ def sales():
             for sale in sales:
                 sal = {
                     "id":sale.id,
-                    "product_name":sale.product_name,
+                    "product_id":sale.product_id,
                     "amount":sale.amount,
                     "sale_date":sale.sale_date
                     }
@@ -273,7 +272,7 @@ def sales():
                             return jsonify(error), 403
             else:
                 new_sale = Sale(
-                        product_id = data["product.id"],
+                        product_id = data["product_id"],
                         amount = float(data["amount"])
                     )
                 session.add(new_sale)

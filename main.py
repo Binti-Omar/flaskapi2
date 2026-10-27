@@ -258,7 +258,7 @@ def sales():
             for sale in sales:
                 sal = {
                     "id":sale.id,
-                    "product_id":sale.product_id,
+                    "product_name":sale.product_name,
                     "amount":sale.amount,
                     "sale_date":sale.sale_date
                     }
@@ -267,12 +267,12 @@ def sales():
         
         elif request.method=="POST":
             data = request.get_json()
-            if not data.get("product_id") or not data.get("amount"):
+            if not data.get("product_name") or not data.get("amount"):
                             error = {"Error":"Ensure all fields are set"}
                             return jsonify(error), 403
             else:
                 new_sale = Sale(
-                        product_id = data["product_id"],
+                        product_name = data["product_name"],
                         amount = float(data["amount"])
                     )
                 session.add(new_sale)
@@ -288,6 +288,30 @@ def sales():
     except Exception as e:
             sentry_sdk.capture_exception(e)
             return jsonify({"error": "Something went wrong"}), 500
+
+@app.route("/update_sales", methods = allowed_methods)
+@jwt_required()
+def update_sales():
+    if request.method=="PUT":
+        data = request.get_json()
+        print(data)
+
+        sale = session.scalars(select(Sale).where(Sale.id==data["id"]))
+
+        if not sale:
+            return jsonify({
+                "Error": "Sale not found"
+            }), 404
+
+        sale.product_name = data["product_name"]
+        sale.amount = float(data["amount"])
+
+        session.commit()
+
+        return jsonify({
+            "Message": "Product updated successfully"
+        }), 200
+    # return jsonify({"error":"method not allowed"}), 405
     
 @app.route("/sales-details",methods = allowed_methods)
 @jwt_required()

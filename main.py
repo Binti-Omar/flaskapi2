@@ -241,7 +241,7 @@ def update_product():
         return jsonify({
             "Message": "Product updated successfully"
         }), 200
-    # return jsonify({"error":"method not allowed"}), 405
+    return jsonify({"error":"method not allowed"}), 405
 
 @app.route("/sales",methods = allowed_methods)
 @jwt_required()
@@ -296,7 +296,7 @@ def update_sales():
         data = request.get_json()
         print(data)
 
-        sale = session.scalars(select(Sale).where(Sale.id==data["id"]))
+        sale = session.scalars(select(Sale).where(Sale.id==data["id"])).first()
 
         if not sale:
             return jsonify({
@@ -311,7 +311,24 @@ def update_sales():
         return jsonify({
             "Message": "Product updated successfully"
         }), 200
-    # return jsonify({"error":"method not allowed"}), 405
+    return jsonify({"error":"method not allowed"}), 405
+
+@app.route("/delete_sales/<int:sale_id>", methods=["DELETE"])
+@jwt_required()
+def delete_sales(sale_id):
+    if request.method=="DELETE":
+
+        sale = session.get(Sale, sale_id)
+
+        if not sale:
+            return jsonify({
+                "Error": "Sale not found"
+                }), 404
+
+        session.delete(sale)
+        session.commit()
+
+    return jsonify({"Message": "Sale deleted successfully"}), 200
     
 @app.route("/sales-details",methods = allowed_methods)
 @jwt_required()

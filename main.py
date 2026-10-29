@@ -243,51 +243,116 @@ def update_product():
         }), 200
     return jsonify({"error":"method not allowed"}), 405
 
-@app.route("/sales",methods = allowed_methods)
+# @app.route("/sales",methods = allowed_methods)
+# @jwt_required()
+# def sales():
+#     try:
+#         email = get_jwt_identity()
+        
+#         user = session.scalars(select(User).where(User.email==email)).first()
+#         if request.method=="GET":
+#             query=select(Sale)
+#             sales=session.scalars(query)
+
+#             sales_list = []
+#             for sale in sales:
+#                 sal = {
+#                     "id":sale.id,
+#                     "product_name":sale.product_name,
+#                     "amount":sale.amount,
+#                     "sale_date":sale.sale_date
+#                     }
+#                 sales_list.append(sal)
+#             return jsonify(sales_list), 200
+        
+#         elif request.method=="POST":
+#             data = request.get_json()
+#             if not data.get("product_name") or not data.get("amount"):
+#                             error = {"Error":"Ensure all fields are set"}
+#                             return jsonify(error), 403
+#             else:
+#                 new_sale = Sale(
+#                         product_name = data["product_name"],
+#                         amount = float(data["amount"])
+#                     )
+#                 session.add(new_sale)
+#                 session.commit()
+
+#             message = {"Message":"Sales added successfully"}
+#             return jsonify(message), 201
+        
+#         else:
+#             error = {"Error":"Method not allowed"}
+#             return jsonify(error), 405
+        
+#     except Exception as e:
+#             sentry_sdk.capture_exception(e)
+#             return jsonify({"error": "Something went wrong"}), 500
+
+@app.route("/sales", methods=allowed_methods)
 @jwt_required()
 def sales():
     try:
         email = get_jwt_identity()
-        
-        user = session.scalars(select(User).where(User.email==email)).first()
-        if request.method=="GET":
-            query=select(Sale)
-            sales=session.scalars(query)
+
+        user = session.scalars(
+            select(User).where(User.email == email)
+        ).first()
+
+        if request.method == "GET":
+            query = select(Sale)
+            sales = session.scalars(query)
 
             sales_list = []
+
             for sale in sales:
+                payment = session.scalars(
+                    select(Payment)
+                    .where(Payment.sales_id == sale.id)
+                    .order_by(Payment.payment_date.desc())
+                ).first()
+
                 sal = {
-                    "id":sale.id,
-                    "product_name":sale.product_name,
-                    "amount":sale.amount,
-                    "sale_date":sale.sale_date
-                    }
+                    "id": sale.id,
+                    "product_name": sale.product_name,
+                    "amount": sale.amount,
+                    "sale_date": sale.sale_date,
+                    "payment": {
+                        "transaction_code": payment.transaction_code,
+                        "amount": payment.amount,
+                        "phone_number": payment.phone_number,
+                        "status": payment.payment_status
+                    } if payment else None
+                }
+
                 sales_list.append(sal)
+
             return jsonify(sales_list), 200
-        
-        elif request.method=="POST":
+
+        elif request.method == "POST":
             data = request.get_json()
+
             if not data.get("product_name") or not data.get("amount"):
-                            error = {"Error":"Ensure all fields are set"}
-                            return jsonify(error), 403
+                error = {"Error": "Ensure all fields are set"}
+                return jsonify(error), 403
             else:
                 new_sale = Sale(
-                        product_name = data["product_name"],
-                        amount = float(data["amount"])
-                    )
+                    product_name=data["product_name"],
+                    amount=float(data["amount"])
+                )
                 session.add(new_sale)
                 session.commit()
 
-            message = {"Message":"Sales added successfully"}
+            message = {"Message": "Sales added successfully"}
             return jsonify(message), 201
-        
+
         else:
-            error = {"Error":"Method not allowed"}
+            error = {"Error": "Method not allowed"}
             return jsonify(error), 405
-        
+
     except Exception as e:
-            sentry_sdk.capture_exception(e)
-            return jsonify({"error": "Something went wrong"}), 500
+        sentry_sdk.capture_exception(e)
+        return jsonify({"error": "Something went wrong"}), 500
 
 @app.route("/update_sales", methods = allowed_methods)
 @jwt_required()
@@ -559,7 +624,8 @@ def saf_callback():
                 for item in callback_metadata:
                     if item.get('Name') == 'MpesaReceiptNumber':
                         payment.transaction_code = item.get('Value')
-                payment.payment_status = "completed"
+                payment.payment_status = "complete"
+                print(f"-----------this is payload:{payload}",flush=True)
             else:
                 payment.payment_status = "failed"
 

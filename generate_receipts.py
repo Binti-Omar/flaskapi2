@@ -1,9 +1,10 @@
 from fpdf import FPDF
 from cloudinary_service import upload_pdf
 
-pdf = FPDF()
+# pdf = FPDF()
 
 def create_pdf(payment_data,transaction_code):
+    pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size = 12)
     pdf.multi_cell(200, 10, txt=payment_data,align = "C")
